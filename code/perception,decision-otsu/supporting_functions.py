@@ -61,16 +61,6 @@ def update_rover(Rover, data):
       image = Image.open(BytesIO(base64.b64decode(imgString)))
       Rover.img = np.asarray(image)
 
-      imgarray = np.asarray(image, dtype=np.uint8)
-      image_cv2 = cv2.cvtColor(imgarray, cv2.COLOR_RGB2BGR)
-      image_hsv = cv2.cvtColor(imgarray, cv2.COLOR_RGB2HSV)
-      image_otsu = cv2.cvtColor(imgarray, cv2.COLOR_RGB2GRAY)
-
-      Rover.cv2 = image_cv2
-      Rover.hsv = image_hsv
-      Rover.otsu = image_otsu
-      Rover.imread = Rover.img
-
       # Return updated Rover and separate image for optional saving
       return Rover, image
 

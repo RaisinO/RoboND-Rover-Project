@@ -1,5 +1,8 @@
 import numpy as np
 import cv2
+import matplotlib.image as mpimg
+import PIL
+from supporting_functions import update_rover
 
 '''
 PERSPECTIVE TRANSFORM
@@ -15,24 +18,22 @@ def perspect_transform(img, src, dst):
 COLOR THRESHOLDING OF GROUND, OBSTACLES, AND ROCKS
 '''
 #GROUND
-def navigable_thresh(img, rgb_thresh=(175,172,160)):
-    threshed_ground = np.zeros_like(img[:,:,0])
-    above_thresh = (img[:,:,0] > rgb_thresh[0]) \
-                & (img[:,:,1] > rgb_thresh[1]) \
-                & (img[:,:,2] > rgb_thresh[2])
-    threshed_ground[above_thresh] = 1
+def navigable_thresh(img):
+    image_otsu = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    blur = cv2.GaussianBlur(image_otsu,(5,5),0)
+    ret2,threshed_ground = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return threshed_ground
-'''navi_world = navigable_thresh(warped)'''
+'''navigable_world = navigable_thresh(warped)'''
 
 #OBSTACLES
-'''obst_world = np.absolute(np.float32(threshed) - 1) * masked'''
+'''obst_world = np.absolute(np.float32(navi_world) - 1) * masked'''
 
 #GOLD ROCKS
 def rock_thresh(img):
-    #hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    image_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lower_yellow = np.array([4,100,100])
     upper_yellow = np.array([33,255,255])
-    threshed_sample = cv2.inRange(img, lower_yellow, upper_yellow)
+    threshed_sample = cv2.inRange(image_hsv, lower_yellow, upper_yellow)
     return threshed_sample
 '''rock_world = rock_thresh(warped_rock)'''
 
@@ -78,10 +79,10 @@ PERCEPTION FUNCTION
 def perception_step(Rover):
     # Perform perception steps to update Rover()
 
+
     # TODO:
     # NOTE: camera image is coming to you in Rover.img
     image = Rover.img
-    image_hsv = Rover.hsv
 
     # 1) Define source and destination points for perspective transform
     dst_size = 5
@@ -117,7 +118,7 @@ def perception_step(Rover):
     obst_x_world, obst_y_world = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
 
     # 7) Update Rover worldmap (to be displayed on right side of screen)
-    Rover.worldmap[navi_y_world, navi_x_world, 2] += 25
+    Rover.worldmap[navi_y_world, navi_x_world, 2] += 10
     Rover.worldmap[obst_y_world, obst_x_world, 0] += 1
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
@@ -132,7 +133,7 @@ def perception_step(Rover):
     Rover.nav_angles = angles
 
     #SEE IF WE CAN FIND SOME ROCKS
-    warped_rock,_ = perspect_transform(image_hsv, source, destination)
+    warped_rock,_ = perspect_transform(image, source, destination)
     rock_world = rock_thresh(warped_rock)
     if rock_world.any():
         #CONVERT FROM IMAGE COORDS TO ROVER COORDS - ROCKS
