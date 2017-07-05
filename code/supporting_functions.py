@@ -29,7 +29,7 @@ def update_rover(Rover, data):
             if np.isfinite(tot_time):
                   Rover.total_time = tot_time
       # Print out the fields in the telemetry data dictionary
-      print(data.keys())
+      #print(data.keys())
       # The current speed of the rover in m/s
       Rover.vel = convert_to_float(data["speed"])
       # The current position of the rover
@@ -69,7 +69,6 @@ def update_rover(Rover, data):
       Rover.cv2 = image_cv2
       Rover.hsv = image_hsv
       Rover.otsu = image_otsu
-      Rover.imread = Rover.img
 
       # Return updated Rover and separate image for optional saving
       return Rover, image

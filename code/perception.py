@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from math import *
 
 '''
 PERSPECTIVE TRANSFORM
@@ -129,7 +130,7 @@ def perception_step(Rover):
     # Update Rover pixel distances and angles
         # Rover.nav_dists = rover_centric_pixel_distances
         # Rover.nav_angles = rover_centric_angles
-    Rover.nav_angles = angles
+    Rover.nav_dists, Rover.nav_angles = dist, angles
 
     #SEE IF WE CAN FIND SOME ROCKS
     warped_rock,_ = perspect_transform(image_hsv, source, destination)
@@ -143,14 +144,31 @@ def perception_step(Rover):
         #POLAR COORDS
         rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
         #CENTER OF ROCKS
-        rock_idx = np.argmin(rock_dist)
-        rock_xcen = rock_x_world[rock_idx]
-        rock_ycen = rock_y_world[rock_idx]
+        rock_idx_dist = np.argmin(rock_dist)
+        rock_xcen = rock_x_world[rock_idx_dist]
+        rock_ycen = rock_y_world[rock_idx_dist]
         #UPDATE WORLDMAP
         Rover.worldmap[rock_ycen, rock_xcen, 1] += 255
         Rover.vision_image[:, :, 1] = rock_world * 255
     else:
         Rover.vision_image[:, :, 1] = 0
+
+    #SEE IF WE CAN PLOT A PATH TO SOME ROCKS
+    rock_world_pos = Rover.worldmap[:,:,1].nonzero()
+    if rock_world_pos[0].any():
+        #CONVERT FROM IMAGE COORDS TO ROVER COORDS - ROCKS
+        rock_xpix, rock_ypix = rover_coords(rock_world)
+        #PIX_TO_WORLD(XPIX, YPIX, XPOS, YPOS, YAW, WORLD_SIZE, SCALE)
+        #ROVER-CENTRIC COORD PIXEL VALUES - ROCKS
+        rock_x_world, rock_y_world = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
+        #POLAR COORDS
+        rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
+        if rock_ang.any():
+            #ANGLE TO ROCK
+            Rover.rock_idx_mean_ang = np.mean(rock_ang)
+
+    else:
+        Rover.rock_idx_mean_ang = None
 
 
     return Rover
