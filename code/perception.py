@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from math import *
+import time
 
 '''
 PERSPECTIVE TRANSFORM
@@ -87,7 +88,7 @@ def perception_step(Rover):
     # 1) Define source and destination points for perspective transform
     dst_size = 5
     bottom_offset = 6
-    source = np.float32([[15, 140], [301 ,140],[200, 96], [118, 96]])
+    source = np.float32([[14, 140], [301 ,140],[200, 96], [118, 96]])
     destination = np.float32([[image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
                       [image.shape[1]/2 + dst_size, image.shape[0] - bottom_offset],
                       [image.shape[1]/2 + dst_size, image.shape[0] - 2*dst_size - bottom_offset],
@@ -150,25 +151,25 @@ def perception_step(Rover):
         #UPDATE WORLDMAP
         Rover.worldmap[rock_ycen, rock_xcen, 1] += 255
         Rover.vision_image[:, :, 1] = rock_world * 255
+        Rover.rock_dists, Rover.rock_angles = rock_dist, rock_ang
+        Rover.rock_idx_dist = rock_idx_dist
     else:
         Rover.vision_image[:, :, 1] = 0
+        Rover.rock_angles = None
+        Rover.rock_idx_dist = None
 
     #SEE IF WE CAN PLOT A PATH TO SOME ROCKS
-    rock_world_pos = Rover.worldmap[:,:,1].nonzero()
-    if rock_world_pos[0].any():
+    #rock_world_pos = Rover.worldmap[:,:,1].nonzero()
+
+    #if rock_world_pos[0].any():
         #CONVERT FROM IMAGE COORDS TO ROVER COORDS - ROCKS
-        rock_xpix, rock_ypix = rover_coords(rock_world)
+    #    rock_xpix, rock_ypix = rover_coords(rock_world)
         #PIX_TO_WORLD(XPIX, YPIX, XPOS, YPOS, YAW, WORLD_SIZE, SCALE)
         #ROVER-CENTRIC COORD PIXEL VALUES - ROCKS
-        rock_x_world, rock_y_world = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
+    #    rock_x_world, rock_y_world = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
         #POLAR COORDS
-        rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
-        if rock_ang.any():
-            #ANGLE TO ROCK
-            Rover.rock_idx_mean_ang = np.mean(rock_ang)
+    #    rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
 
-    else:
-        Rover.rock_idx_mean_ang = None
 
 
     return Rover
