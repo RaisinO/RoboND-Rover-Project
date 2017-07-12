@@ -4,51 +4,14 @@ import time
 
 rover_time_count = time.time()
 
-def right_adjustment(Rover):
-    global rover_time_count
-    Rover.throttle = 0
-    Rover.brake = 0
-    Rover.steer = -15
-    time.sleep(0.5)
-    return Rover
-
-def left_adjustment(Rover):
+def get_unstuck(Rover):
     global rover_time_count
     Rover.throttle = 0
     Rover.brake = 0
     Rover.steer = 15
-    time.sleep(0.5)
-    return Rover
-
-def forward_adjustment(Rover):
-    global rover_time_count
-    Rover.throttle = 0.5
-    Rover.brake = 0
+    time.sleep(0.1)
     Rover.steer = 0
-    time.sleep(2)
     return Rover
-
-def backward_adjustment(Rover):
-    global rover_time_count
-    Rover.throttle = -0.5
-    Rover.brake = 0
-    Rover.steer = 0
-    time.sleep(2)
-    return Rover
-
-def victory_dance(Rover):
-    left_adjustment(Rover)
-    left_adjustment(Rover)
-    right_adjustment(Rover)
-    right_adjustment(Rover)
-    forward_adjustment(Rover)
-    backward_adjustment(Rover)
-    return Rover
-
-def get_unstuck(Rover):
-    backward_adjustment(Rover)
-    left_adjustment(Rover)
-    return(Rover)
 
 # This is where you can build a decision tree for determining throttle, brake and steer
 # commands based on the output of the perception_step() function
@@ -69,17 +32,20 @@ def decision_step(Rover):
     Rover.distance_home = sqrt((Rover.pos[1] - Rover.start_pos[1])**2 +(Rover.pos[0] - Rover.start_pos[0])**2)
     if Rover.samples_collected == 6:
         if Rover.distance_home < 5:
+            Rover.mode = 'stop'
+            Rover.brake = Rover.brake_set
             print("MISSION COMPLETE: ALL 6 SAMPLES COLLECTED AND RETURNED TO STARTING POSITION!")
             Rover.mode = "MISSION COMPLETE"
             Rover.throttle = 0
             Rover.steering = 0
-            Rover.brake = Rover.brake_set
+            Rover.brake = 0
+            #VICTORY DANCE
+            Rover.steer = 15
+            time.sleep(2.5)
+            Rover.steer = -15
+            time.sleep(2.5)
+            quit()
             return Rover
-
-#IS THE MISSION COMPLETE?
-    if Rover.mode == "MISSION COMPLETE":
-        Rover = victory_dance(Rover)
-        quit()
 
 #SEND PICKUP COMMAND?
     if Rover.near_sample and Rover.vel == 0 and not Rover.picking_up:
@@ -94,17 +60,19 @@ def decision_step(Rover):
         return Rover
 
 #STUCK CHECK
-    if Rover.vel < 0.1 and Rover.throttle!=0:
-        if time.time() - rover_time_count > 1.5:
-            Rover = get_unstuck(Rover)
-            return Rover
-    #RESET STUCK TIME
-    else:
-        rover_time_count = time.time()
+    if Rover.nav_angles is not None:
+        if Rover.mode == 'forward':
+            if Rover.vel < 0.1 and Rover.throttle != 0:
+                if time.time() - rover_time_count > 1:
+                    Rover = get_unstuck(Rover)
+                    return Rover
+            #RESET STUCK TIME
+            else:
+                rover_time_count = time.time()
 
 #ROVER TO SAMPLE NAVIGATION TREE
     #IS THERE A SAMPLE NEARBY TO DRIVE TO?
-    if Rover.rock_angles is not None:
+    if Rover.rock_idx_dist is not None:
         #CHECK ROVER.MODE STATUS. FORWARD?
         if Rover.mode == 'forward':
             #SEE IF THERE IS NAVIGABLE TERRAIN IN FRONT OF US TO DRIVE
@@ -145,7 +113,7 @@ def decision_step(Rover):
                     Rover.brake = 0
                     #4-WHEEL TURN TO THE RIGHT
                     Rover.steer = -15 #CAN DEFINITELY BE MORE CLEVER HERE
-                    time.sleep(0.5) #CAN DEFINITELY BE MORE CLEVER HERE
+                    time.sleep(0.4) #CAN DEFINITELY BE MORE CLEVER HERE
                 #IF STOPPED BUT THERE IS SUFFICIENT NAVIGABLE TERRAIN SET TO GO
                 if len(Rover.nav_angles) >= Rover.go_forward:
                     #SET THROTTLE TO STORED VALUE
@@ -199,7 +167,7 @@ def decision_step(Rover):
                     Rover.brake = 0
                     #4-WHEEL TURN TO THE RIGHT
                     Rover.steer = -15 #CAN DEFINITELY BE MORE CLEVER HERE
-                    time.sleep(0.5) #CAN DEFINITELY BE MORE CLEVER HERE
+                    time.sleep(0.4) #CAN DEFINITELY BE MORE CLEVER HERE
                 #IF STOPPED BUT THERE IS SUFFICIENT NAVIGABLE TERRAIN SET TO GO
                 if len(Rover.nav_angles) >= Rover.go_forward:
                     #SET THROTTLE TO STORED VALUE

@@ -17,7 +17,7 @@ def perspect_transform(img, src, dst):
 COLOR THRESHOLDING OF GROUND, OBSTACLES, AND ROCKS
 '''
 #GROUND
-def navigable_thresh(img, rgb_thresh=(175,172,160)):
+def navigable_thresh(img, rgb_thresh=(160,160,160)):
     threshed_ground = np.zeros_like(img[:,:,0])
     above_thresh = (img[:,:,0] > rgb_thresh[0]) \
                 & (img[:,:,1] > rgb_thresh[1]) \
@@ -119,8 +119,9 @@ def perception_step(Rover):
     obst_x_world, obst_y_world = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
 
     # 7) Update Rover worldmap (to be displayed on right side of screen)
-    Rover.worldmap[navi_y_world, navi_x_world, 2] += 25
-    Rover.worldmap[obst_y_world, obst_x_world, 0] += 1
+    if ((Rover.pitch > 359.25 or Rover.pitch < 0.75) and (Rover.roll > 359.25 or Rover.roll < 0.75)):
+        Rover.worldmap[navi_y_world, navi_x_world, 2] += 25
+        Rover.worldmap[obst_y_world, obst_x_world, 0] += 1
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
         #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
@@ -146,6 +147,7 @@ def perception_step(Rover):
         rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
         #CENTER OF ROCKS
         rock_idx_dist = np.argmin(rock_dist)
+        rock_idx_ang = np.argmin(rock_ang)
         rock_xcen = rock_x_world[rock_idx_dist]
         rock_ycen = rock_y_world[rock_idx_dist]
         #UPDATE WORLDMAP
@@ -153,10 +155,30 @@ def perception_step(Rover):
         Rover.vision_image[:, :, 1] = rock_world * 255
         Rover.rock_dists, Rover.rock_angles = rock_dist, rock_ang
         Rover.rock_idx_dist = rock_idx_dist
+        Rover.rock_idx_ang = rock_idx_ang
     else:
         Rover.vision_image[:, :, 1] = 0
         Rover.rock_angles = None
         Rover.rock_idx_dist = None
+        Rover.rock_idx_ang = None
+
+
+    #rock_world_pos = Rover.worldmap[:,:,1].nonzero()
+    #if rock_idx_dist.any =! None:
+    #    if np.min(rock_idx_dist) < 5:
+    #        rock_xpix, rock_ypix = rover_coords(rock_world)
+    #        rock_x_world, rock_y_world = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
+    #        rock_dist, rock_ang = to_polar_coords(rock_xpix, rock_ypix)
+    #        Rover.rock_dists, Rover.rock_angles = rock_dist, rock_ang
+    #        rock_idx_dist = np.argmin(rock_dist)
+    #        Rover.rock_idx_dist = rock_idx_dist
+    #else:
+    #    Rover.rock_idx_dist = None
+    #    Rover.rock_angles = None
+
+
+        #Rover.rock_angles = None
+        #Rover.rock_idx_dist = None
 
     #SEE IF WE CAN PLOT A PATH TO SOME ROCKS
     #rock_world_pos = Rover.worldmap[:,:,1].nonzero()
